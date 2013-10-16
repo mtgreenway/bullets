@@ -6,34 +6,6 @@ import getpass
 import local_settings
 from time import localtime, strftime
 
-class Bullets(object):
-    """ Someone who sending bullets and their bullets
-    """
-
-    def __init__(self, msg):
-        """ parse the message and create Bullets object"""
-        pass
-
-    @property
-    def name(self):
-        """ Return presentation name:
-        like "Allison" or "Matt Dabrowski"
-        """
-        return self.name
-
-    @property
-    def email(self):
-        """ The email we expect this user to send bullets from and also to
-        receive bullet reminders at e.g. mgreenway@uchicago.edu """
-        return self.email
-
-    @property
-    def text(self):
-        """ The users bullets example:
-        some text blob. """
-        return self.text
-
-
 
 def sent_today(msg):
     """ Return True if the message was sent today
@@ -80,7 +52,8 @@ def main():
 
             email = msg["From"].split()[-1].strip("<>")
             print email
-            daily_bullets.append("%s:\n%s\n" % (local_settings.folks[email], payload))
+            if email in local_settings.folks:
+                daily_bullets.append("%s:\n%s\n" % (local_settings.folks[email], payload))
     print "\n".join(daily_bullets)
 
 if __name__ == "__main__":
