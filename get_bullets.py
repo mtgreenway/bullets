@@ -5,6 +5,10 @@ import email
 import getpass
 import local_settings
 from time import localtime, strftime
+import smtplib
+import sys
+from email.mime.text import MIMEText
+import html2text
 
 
 def today():
@@ -47,9 +51,11 @@ def messages_with(search):
 def trim_message(msg):
     """ Remove certain patterns from the email """
     if not isinstance(msg, basestring):
-        msg = msg[0]
+        msg = msg[1]
         msg = msg.as_string()
 
+    if msg.startswith("<html>"):
+        msg = html2text.html2text(msg)
     msg = msg.replace("\r", "")
 
     explode = msg.split("\n")
@@ -65,8 +71,7 @@ def trim_message(msg):
 
     return "\n".join(explode)
 
-
-def main():
+def fetch_bullets():
     """
     Run the main bullet fetch loop
     """
@@ -84,10 +89,24 @@ def main():
                 senders.add(email)
                 daily_bullets.append("%s:\n%s\n" % (local_settings.folks[email], payload))
 
-    print "\n".join(daily_bullets)
+    return  "\n".join(daily_bullets), set(local_settings.folks.keys()) - senders
 
-    #print set(local_settings.folks.keys()) - senders
 
+def main():
+    #bullets, didnt_send = fetch_bullets()
+    bullets, _ = fetch_bullets()
+    if len(sys.argv) == 2 and sys.argv[1] == "-r":
+        didnt_send = set(["mgreenway@uchicago.edu"])
+        msg = MIMEText("Please send me your bullets")
+        msg['Subject'] = 'Bullets'
+        msg['From'] = "<%s>" % local_settings.sender
+        msg['To'] = ", ".join(list(didnt_send))
+        server = smtplib.SMTP_SSL(host="authsmtp.uchicago.edu", port=465)
+        server.login(local_settings.username, local_settings.password)
+        server.sendmail("mgreenway@uchicago.edu", list(didnt_send), msg.as_string())
+        #server.sendmail("mgreenway@uchicago.edu", "mgreenway@uchicago.edu", msg.as_string())
+    else:
+        print bullets
 
 if __name__ == "__main__":
     main()
