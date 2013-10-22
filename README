@@ -1,0 +1,12 @@
+Bullet Email Automation
+
+I do : vi <(./get_bullets.py)
+
+TODO:
+    Handle html better
+
+    remove signatures
+
+    do what "git commit" does:
+        open an editor and when you save send the email to everyone on the
+        list for bullets

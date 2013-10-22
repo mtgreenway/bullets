@@ -104,7 +104,6 @@ def main():
         server = smtplib.SMTP_SSL(host="authsmtp.uchicago.edu", port=465)
         server.login(local_settings.username, local_settings.password)
         server.sendmail("mgreenway@uchicago.edu", list(didnt_send), msg.as_string())
-        #server.sendmail("mgreenway@uchicago.edu", "mgreenway@uchicago.edu", msg.as_string())
     else:
         print bullets
 
