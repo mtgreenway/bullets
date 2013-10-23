@@ -51,7 +51,7 @@ def messages_with(search):
 def trim_message(msg):
     """ Remove certain patterns from the email """
     if not isinstance(msg, basestring):
-        msg = msg[1]
+        msg = msg[0]
         msg = msg.as_string()
 
     if msg.startswith("<html>"):
