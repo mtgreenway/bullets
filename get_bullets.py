@@ -1,27 +1,19 @@
 #!/usr/bin/env python
 
-import imaplib
+from email.mime.text import MIMEText
+from time import localtime, strftime
+
 import email
 import getpass
+import html2text
+import imaplib
 import local_settings
-from time import localtime, strftime
 import smtplib
 import sys
-from email.mime.text import MIMEText
-import html2text
 
 
 def today():
-    return strftime("%a, %d %b %Y", localtime())
-
-def today_():
     return strftime("%d-%b-%Y", localtime())
-
-
-def sent_today(msg):
-    """ Return True if the message was sent today
-    """
-    return today() == msg["Date"][:-15]
 
 
 def messages_with(search):
@@ -71,30 +63,43 @@ def trim_message(msg):
 
     return "\n".join(explode)
 
+
+def rem_sig(user, msg):
+    return msg.split(local_settings.sigs[user])[0]
+
+
+def points_to_line(msg):
+    pgp = "-----BEGIN PGP SIGNED MESSAGE-----"
+    for form in ["\n* ", "\n- "]:
+        if msg.startswith(form[1:]) or form in msg:
+            return "\n".join([p.replace("\n", " ") for p in msg.split(form)
+                    if not p.startswith(pgp)])[2:]
+
+
 def fetch_bullets():
-    """
-    Run the main bullet fetch loop
-    """
+    """ Run the main bullet fetch loop """
     daily_bullets = []
     senders = set()
 
-    #for msg in messages_with("(senton %s) (subject bullet)" % today_()):
-    for msg in messages_with("(senton %s) (subject bullet)" % today_()):
-    #for msg in messages_with("(subject bullet)" ):
-        if sent_today(msg):
-            payload = trim_message(msg.get_payload())
+    for msg in messages_with("(senton %s) (subject bullet)" % today()):
+        email = msg["From"].split()[-1].strip("<>")
+        payload = trim_message(msg.get_payload())
+        payload = rem_sig(email, payload)
+        payload = points_to_line(payload)
 
-            email = msg["From"].split()[-1].strip("<>")
-            if email in local_settings.folks:
-                senders.add(email)
-                daily_bullets.append("%s:\n%s\n" % (local_settings.folks[email], payload))
+        if email in local_settings.folks:
+            senders.add(email)
+            daily_bullets.append("%s:\n%s\n" % (local_settings.folks[email],
+                    payload))
 
-    return  "\n".join(daily_bullets), set(local_settings.folks.keys()) - senders
+    return  "\n".join(daily_bullets), set(
+            local_settings.folks.keys()) - senders
 
 
 def main():
     #bullets, didnt_send = fetch_bullets()
     bullets, _ = fetch_bullets()
+
     if len(sys.argv) == 2 and sys.argv[1] == "-r":
         didnt_send = set(["mgreenway@uchicago.edu"])
         msg = MIMEText("Please send me your bullets")
@@ -103,7 +108,8 @@ def main():
         msg['To'] = ", ".join(list(didnt_send))
         server = smtplib.SMTP_SSL(host="authsmtp.uchicago.edu", port=465)
         server.login(local_settings.username, local_settings.password)
-        server.sendmail("mgreenway@uchicago.edu", list(didnt_send), msg.as_string())
+        server.sendmail("mgreenway@uchicago.edu", list(didnt_send),
+                msg.as_string())
     else:
         print bullets
 
